@@ -1,17 +1,12 @@
-# YOUR CODE
 from bs4 import BeautifulSoup
 import re
 import requests
 
 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36'}
 
-html = requests.get("https://tiki.vn/o-to-xe-may-xe-dap/c8594?src=c.8594.hamburger_menu_fly_out_banner&page=2", headers=headers).text
-# print(html)
-# results = {}
+html = requests.get("https://tiki.vn/o-to-xe-may-xe-dap/c8594?src=c.8594.hamburger_menu_fly_out_banner&page=6", headers=headers).text
 
 soup = BeautifulSoup(html, features="html.parser")
-
-# print(soup.find_all('div', {"class":"cpy-right-info"}))
 
 for product in soup.find_all('div', {"class":"product-item"}):
     print("-"*50)
@@ -31,16 +26,5 @@ for product in soup.find_all('div', {"class":"product-item"}):
     print("# of reviews:", reviews)
     is_under_price = bool(product.find('div', {'class': 'badge-under_price'}))
     print("Under price:", is_under_price)
-    discount = product.find('div', {"class": "price-discount"})
-    print("Discount:", discount)
-
-# for link in soup.find_all('div', {'class': "ProductList__Wrapper-sc-1dl80l2-0 healEa"}): 
-#     print(link)
-
-
-
-#   if link.text: 
-#       print(link["href"])
-    # results[link.text.strip()] = link["href"]
-
-# print(results)
+    discount = product.find('span', {'class': 'sale-tag'})
+    print("Discount:", discount.text if discount else "None")
