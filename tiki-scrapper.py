@@ -6,7 +6,7 @@ headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/
 
 html = requests.get("https://tiki.vn/o-to-xe-may-xe-dap/c8594?src=c.8594.hamburger_menu_fly_out_banner&page=2", headers=headers).text
 
-soup = BeautifulSoup(html, features="html.parser")
+soup = BeautifulSoup(html, 'html.parser')
 
 for product in soup.find_all('div', {"class":"product-item"}):
     print("-"*50)
@@ -44,3 +44,6 @@ for product in soup.find_all('div', {"class":"product-item"}):
     #Freegifts
     is_freegift = bool(product.find('div',{'class':'freegift-list'}))
     print("Freegift:",is_freegift)
+    #Additional info
+    is_delivery = product.find('div', {'class': 'ship-label-wrapper'}).text.strip()
+    print('Delivery:', is_delivery)
