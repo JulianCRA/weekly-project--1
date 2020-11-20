@@ -1,3 +1,0 @@
-import requests
-r = requests.get('https://vnexpress.net/')
-print(r.text)
