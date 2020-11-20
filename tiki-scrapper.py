@@ -45,5 +45,5 @@ for product in soup.find_all('div', {"class":"product-item"}):
     is_freegift = bool(product.find('div',{'class':'freegift-list'}))
     print("Freegift:",is_freegift)
     #Additional info
-    is_delivery = product.find('div', {'class': 'ship-label-wrapper'}).text.strip()
-    print('Delivery:', is_delivery)
+    is_info = product.find('div', {'class': 'ship-label-wrapper'}).text.strip()
+    print('Additional info:', is_info)
