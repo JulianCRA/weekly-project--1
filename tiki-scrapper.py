@@ -25,7 +25,7 @@ for index, product in enumerate(soup.find_all('div', {"class":"product-item"})):
     product_image = product.find('img', {"class": "product-image"})["src"]
     print("Product image:", product_image)
     #Product link
-    product_link = product.find('a')["href"]
+    product_link = "https://tiki.vn/"+re.findall(r'^.*\.html', product.find('a')["href"])[0]
     print("Product link:", product_link)
     #Tikinow availabled
     is_tiki_now = bool(product.find('div', {'class': 'badge-service'}))
