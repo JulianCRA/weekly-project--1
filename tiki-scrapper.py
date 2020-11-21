@@ -2,7 +2,7 @@ from bs4 import BeautifulSoup
 import re
 import time
 import requests
-
+import pandas as pd
 from random import randint
 
 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36'}
@@ -68,34 +68,40 @@ for i in range(1, 22):
         #Reviews
         has_reviews = bool(product.find('div', {'class': 'review-wrap'}))
         d['Reviews'] = re.findall(r'\d+', product.find('p', {'class': 'review'}).text)[0] if has_reviews else 0
-        print("# of reviews:", d['Reviews'])
+        print("Number of reviews:", d['Reviews'])
 
-        #Rating average
-        #average = product.find('span', {'class': 'rating-content'}).span["style"] if has_reviews else 0
-        #print("Average score:", 0.05*int(re.findall(r'\d+', average)[0]))
+        #Star Rating
+        try:
+            average = product.find('span', {'class': 'rating-content'}).span["style"] if has_reviews else 0
+            d['Star Rating'] = 0.05*int(re.findall(r'\d+', average)[0])
+            print("Star rating:",d['Star Rating'])
+        except:
+            print("Star rating: None")
 
         #Underpricing
         d['Underpricing'] = bool(product.find('div', {'class': 'badge-under_price'}))
-        print("Under price:", d['Underpricing'])
+        print("Underpricing:", d['Underpricing'])
 
         #Discount
-        #discount = product.find('span', {'class': 'sale-tag'})
-        #print("Discount:", discount.text if discount else "None")
+        try:
+            d['discount'] = product.find('span', {'class': 'sale-tag'}).text
+            print("Discount:", d['discount'])
+        except:
+            print("Discount: None")
 
         #Paid by installments
         d['Installments Allowed'] = bool(product.find('div',{'class':'installment-wrapper'}))
         print("Paid by installments:", d['Installments Allowed'])
 
         #Freegifts
-        d['Freegifts'] = bool(product.find('div',{'class':'freegift-list'}))
-        print("Freegift:", d['Freegifts'])
+        d['Freegift'] = bool(product.find('div',{'class':'freegift-list'}))
+        print("Freegift:", d['Freegift'])
         
         #Additional info
         d['Additional Info'] = product.find('div', {'class': 'ship-label-wrapper'}).text.strip()
         print('Additional info:', d['Additional Info'])
         data.append(d)
 
-import pandas as pd
 articles = pd.DataFrame(data)
 print(articles)
-articles.to_csv("./result.csv", index=False)
+articles.to_csv("./Result.csv", index=False)
