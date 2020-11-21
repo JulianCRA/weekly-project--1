@@ -14,6 +14,10 @@ soup = BeautifulSoup(html, features="html.parser")
 if len(soup.find_all('div', {"class":"product-item"})) == 0:
     print('Request Denied or end of the list')
 
+FREESHIP_IMG = "https://salt.tikicdn.com/ts/upload/f3/74/46/f4c52053d220e94a047410420eaf9faf.png"
+TIKINOW_IMG = "https://salt.tikicdn.com/ts/upload/9f/32/dd/8a8d39d4453399569dfb3e80fe01de75.png"
+SHOCKING_IMG = "https://salt.tikicdn.com/ts/upload/75/34/d2/4a9a0958a782da8930cdad8f08afff37.png"
+
 for index, product in enumerate(soup.find_all('div', {"class":"product-item"})):
     print(" "*50)
     print("="*50)
@@ -42,12 +46,18 @@ for index, product in enumerate(soup.find_all('div', {"class":"product-item"})):
 
     #Tikinow available
     service_badge = product.find('div', {'class': 'badge-service'})
-    service_badge = service_badge and service_badge.img["src"] == "https://salt.tikicdn.com/ts/upload/9f/32/dd/8a8d39d4453399569dfb3e80fe01de75.png"
+    service_badge = bool(service_badge) and service_badge.img["src"] == TIKINOW_IMG
     print("TikiNow:", service_badge)
 
     #Freeship available
-    is_freeship = bool(product.find('div', {'class': 'badge-top'}))
-    print("Free shipping:", is_freeship)
+    badge_top = product.find('div', {'class': 'badge-top'})
+    badge_top = bool(badge_top) and badge_top.img["src"] == FREESHIP_IMG
+    print("Freeship available:", badge_top)
+
+    #Shocking price
+    badge_top = product.find('div', {'class': 'badge-top'})
+    badge_top = bool(badge_top) and badge_top.img["src"] == SHOCKING_IMG
+    print("Shocking price:", badge_top)
 
     #Reviews
     has_reviews = bool(product.find('div', {'class': 'review-wrap'}))
