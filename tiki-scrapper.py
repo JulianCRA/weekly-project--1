@@ -83,7 +83,7 @@ for index, product in enumerate(soup.find_all('div', {"class":"product-item"})):
     #Freegifts
     is_freegift = bool(product.find('div',{'class':'freegift-list'}))
     print("Freegift:",is_freegift)
-
+    
     #Additional info
     is_info = product.find('div', {'class': 'ship-label-wrapper'}).text.strip()
     print('Additional info:', is_info)
