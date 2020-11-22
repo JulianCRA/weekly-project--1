@@ -11,20 +11,18 @@ SHOCKING_IMG = "https://salt.tikicdn.com/ts/upload/75/34/d2/4a9a0958a782da8930cd
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36'}
 CATEGORY_LINK = "https://tiki.vn/o-to-xe-may-xe-dap/c8594?src=c.8594.hamburger_menu_fly_out_banner"
 
-page = 23
-fails = 0
+page = 1
 products = []
 
 while True:
-
-    wait_period = random.randint(20, 40)/10
+    fails = 0
+    wait_period = random.randint(10, 40)/10
     print(f'Waiting to fetch page {page} - {wait_period} seconds...')
     time.sleep( wait_period )
     link = f"{CATEGORY_LINK}&page={page}"
 
     response = requests.get(link, headers=HEADERS)
     html = response.text
-    # html = open("page23c.html", "r").read()
 
     soup = BeautifulSoup(html, features="html.parser")
 
@@ -50,8 +48,6 @@ while True:
         if len(product_list) == 0:
             print('No Products')
             break
-
-    fails = 0
 
     for index, product in enumerate(product_list):
         print(" "*50)
