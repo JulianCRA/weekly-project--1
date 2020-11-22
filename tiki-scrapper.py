@@ -1,89 +1,139 @@
 from bs4 import BeautifulSoup
 import re
 import requests
-
-headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36'}
-
-link = "https://tiki.vn/o-to-xe-may-xe-dap/c8594?src=c.8594.hamburger_menu_fly_out_banner&page=2"
-
-response = requests.get(link, headers=headers)
-html = response.text
-
-soup = BeautifulSoup(html, features="html.parser")
-
-if len(soup.find_all('div', {"class":"product-item"})) == 0:
-    print('Request Denied or end of the list')
+import time
+import random
+import json
 
 FREESHIP_IMG = "https://salt.tikicdn.com/ts/upload/f3/74/46/f4c52053d220e94a047410420eaf9faf.png"
 TIKINOW_IMG = "https://salt.tikicdn.com/ts/upload/9f/32/dd/8a8d39d4453399569dfb3e80fe01de75.png"
 SHOCKING_IMG = "https://salt.tikicdn.com/ts/upload/75/34/d2/4a9a0958a782da8930cdad8f08afff37.png"
+HEADERS = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36'}
+CATEGORY_LINK = "https://tiki.vn/o-to-xe-may-xe-dap/c8594?src=c.8594.hamburger_menu_fly_out_banner"
 
-for index, product in enumerate(soup.find_all('div', {"class":"product-item"})):
-    print(" "*50)
-    print("="*50)
-    print(f"Product {index}")
-    print("="*50)
-    
-    #Seller ID
-    print("Seller ID:", product["data-id"])
+page = 23
+fails = 0
+products = []
 
-    #Product ID
-    print("Product ID:", product["product-sku"])
+while True:
 
-    #Product price
-    print("Product price:", product["data-price"])
+    wait_period = random.randint(20, 40)/10
+    print(f'Waiting to fetch page {page} - {wait_period} seconds...')
+    time.sleep( wait_period )
+    link = f"{CATEGORY_LINK}&page={page}"
 
-    #Product title
-    print("Product title:", product["data-title"])
+    response = requests.get(link, headers=HEADERS)
+    html = response.text
+    # html = open("page23c.html", "r").read()
 
-    #Product image
-    product_image = product.find('img', {"class": "product-image"})["src"]
-    print("Product image:", product_image)
+    soup = BeautifulSoup(html, features="html.parser")
 
-    #Product link
-    product_link = "https://tiki.vn/"+re.findall(r'^.*\.html', product.find('a')["href"])[0]
-    print("Product link:", product_link)
+    products_json = []
 
-    #Tikinow available
-    service_badge = product.find('div', {'class': 'badge-service'})
-    service_badge = bool(service_badge) and service_badge.img["src"] == TIKINOW_IMG
-    print("TikiNow:", service_badge)
+    for item in soup.findAll('script', attrs={'type': "application/ld+json"}):
+        item_dict = json.loads(item.text)
+        if(item_dict["@type"] == "Product"):
+            products_json.append(item_dict)
 
-    #Freeship available
-    badge_top = product.find('div', {'class': 'badge-top'})
-    badge_top = bool(badge_top) and badge_top.img["src"] == FREESHIP_IMG
-    print("Freeship available:", badge_top)
+    if not soup.find('div', class_='panel-info'):
+        fails += 1
+        print(f'Request Denied or end of the list ({fails}/5)')
+        
+        if fails == 5: break
+        continue
 
-    #Shocking price
-    badge_top = product.find('div', {'class': 'badge-top'})
-    badge_top = bool(badge_top) and badge_top.img["src"] == SHOCKING_IMG
-    print("Shocking price:", badge_top)
+    product_list = soup.find_all('div', {"class":"product-item"})
+    is_div = True
+    if len(product_list) == 0:
+        product_list = soup.find_all('a', {"class":"product-item"})
+        is_div = False
+        if len(product_list) == 0:
+            print('No Products')
+            break
 
-    #Reviews
-    has_reviews = bool(product.find('div', {'class': 'review-wrap'}))
-    reviews = re.findall(r'\d+', product.find('p', {'class': 'review'}).text)[0] if has_reviews else 0
-    print("# of reviews:", reviews)
+    fails = 0
 
-    #Rating average
-    average = product.find('span', {'class': 'rating-content'}).span["style"] if has_reviews else 0
-    print("Average score:", 0.05*int(re.findall(r'\d+', average)[0]))
+    for index, product in enumerate(product_list):
+        print(" "*50)
+        print("="*50)
+        print(f"Page {page} - Product {index}")
+        print("="*50)
+        
+        #Seller ID
+        print("Seller ID:", product["data-id"] if is_div else "Not available at the moment")
+        
+        #Product ID
+        print("Product ID:", products_json[index]["sku"])
 
-    #Underpricing
-    is_under_price = bool(product.find('div', {'class': 'badge-under_price'}))
-    print("Under price:", is_under_price)
+        #Product price
+        print("Product price:", products_json[index]["offers"]["price"] )
 
-    #Discount
-    #discount = product.find('span', {'class': 'sale-tag'})
-    #print("Discount:", discount.text if discount else "None")
+        #Product title
+        print("Product title:", products_json[index]["name"] )
 
-    #Paid by installments
-    is_paid_by_installments = bool(product.find('div',{'class':'installment-wrapper'}))
-    print("Paid by installments:", is_paid_by_installments)
+        #Product image
+        print("Product image:", products_json[index]["image"])
 
-    #Freegifts
-    is_freegift = bool(product.find('div',{'class':'freegift-list'}))
-    print("Freegift:",is_freegift)
-    
-    #Additional info
-    is_info = product.find('div', {'class': 'ship-label-wrapper'}).text.strip()
-    print('Additional info:', is_info)
+        #Product link
+        product_link = "https://tiki.vn"+re.findall(r'^.*\.html', products_json[index]["url"])[0]
+        print("Product link:", product_link)
+
+        #Tikinow available
+        service_badge = product.find('div', {'class': 'badge-service'})
+        if service_badge:
+            img = service_badge.find('img')
+        print("TikiNow:", img["src"]==TIKINOW_IMG if img else False)
+        
+
+        #Freeship available
+        badge_top = product.find('div', {'class': 'badge-top'})
+        if badge_top:
+            img = badge_top.find('img')
+        print("Freeship available:", img["src"]==FREESHIP_IMG if img else False)
+
+        #Shocking price
+        badge_top = product.find('div', {'class': 'badge-top'})
+        if badge_top:
+            img = badge_top.find('img')
+        print("Shocking price:", img["src"]==SHOCKING_IMG if img else False)
+
+        # #Reviews
+        print("# of reviews:", products_json[index]["aggregateRating"]["reviewCount"] if "aggregateRating" in products_json[index] else 0)
+
+        # #Rating average
+        print("Average score:", products_json[index]["aggregateRating"]["ratingValue"] if "aggregateRating" in products_json[index] else 0)
+
+        #Underpricing
+        is_under_price = bool(product.find('div', {'class': 'badge-under_price'}))
+        print("Under price:", is_under_price)
+
+        #Discount
+        if is_div:
+            discount = product.find('span', {'class': 'sale-tag'})
+        else:
+            discount = product.find('div', {'class': 'price-discount__discount'})
+        print("Discount:", discount.text if discount else "0%")
+
+        #Paid by installments
+        if is_div:
+            is_paid_by_installments = bool( product.find('div', {'class': 'installment-wrapper'}) )
+        else:
+            is_paid_by_installments = bool( product.find('div', {'class': 'badge-benefits'}) )
+        print("Paid by installments:", is_paid_by_installments)
+
+        #Freegifts
+        is_freegift = bool(product.find('div',{'class':'freegift-list'}))
+        print("Freegift:",is_freegift)
+
+        
+        #Additional info
+        if is_div:
+            info = product.find('div', {'class': 'ship-label-wrapper'}).text.strip()
+        else:
+            info = product.find('div', {'class': 'badge-additional-info'}).text.strip()
+        print('Additional info:', info)
+
+    page += 1
+
+print("Pages:", page)
+print("Products:", len(products))
