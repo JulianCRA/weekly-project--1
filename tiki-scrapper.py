@@ -2,106 +2,163 @@ from bs4 import BeautifulSoup
 import re
 import time
 import requests
-import pandas as pd
-from random import randint
+import time
+import random
+import json
 
-headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36'}
+FREESHIP_IMG = "https://salt.tikicdn.com/ts/upload/f3/74/46/f4c52053d220e94a047410420eaf9faf.png"
+TIKINOW_IMG = "https://salt.tikicdn.com/ts/upload/9f/32/dd/8a8d39d4453399569dfb3e80fe01de75.png"
+SHOCKING_IMG = "https://salt.tikicdn.com/ts/upload/75/34/d2/4a9a0958a782da8930cdad8f08afff37.png"
+HEADERS = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36'}
+CATEGORY_LINK = "https://tiki.vn/o-to-xe-may-xe-dap/c8594?src=c.8594.hamburger_menu_fly_out_banner"
+MAX_TRIES = 10
 
-data = []
-for i in range(1, 22):
-    link = "https://tiki.vn/o-to-xe-may-xe-dap/c8594?src=c.8594.hamburger_menu_fly_out_banner&page=" + str(i)
-    response = requests.get(link, headers=headers)
-    time.sleep(randint(2,10))
+page = 1
+fails = 0
+products = []
+
+while True:
+    wait_period = random.randint(5, 20)/10
+    print(f'Waiting to fetch page {page} - {wait_period} seconds...')
+    time.sleep( wait_period )
+    link = f"{CATEGORY_LINK}&page={page}"
+
+    try:
+        response = requests.get(link, headers=HEADERS)
+    except:
+        print('Connection failure. Retrying')
+        continue
+
     html = response.text
-    soup = BeautifulSoup(html, "html.parser")
-    if len(soup.find_all('div', {"class":"product-item"})) == 0:
-        print(soup.find('div', {"class":"product-item"}))
-        print(link)
-        print('Request Denied or end of the list')
-    FREESHIP_IMG = "https://salt.tikicdn.com/ts/upload/f3/74/46/f4c52053d220e94a047410420eaf9faf.png"
-    TIKINOW_IMG = "https://salt.tikicdn.com/ts/upload/9f/32/dd/8a8d39d4453399569dfb3e80fe01de75.png"
-    SHOCKING_IMG = "https://salt.tikicdn.com/ts/upload/75/34/d2/4a9a0958a782da8930cdad8f08afff37.png"
-    for index, product in enumerate(soup.find_all('div', {"class":"product-item"})):
-        d = {}
-        print(f"Product {index}")
-        print(f"Page: {i}")
+    soup = BeautifulSoup(html, features="html.parser")
 
+    products_json = []
+    for item in soup.findAll('script', attrs={'type': "application/ld+json"}):
+        item_dict = json.loads(item.text)
+        if(item_dict["@type"] == "Product"):
+            products_json.append(item_dict)
+
+    if not soup.find('div', class_='panel-info'):
+        fails += 1
+        print(f'Request Denied or end of the list - Retry:({fails}/{MAX_TRIES})')
+        
+        if fails >= MAX_TRIES: break
+        continue
+    fails = 0
+    
+    product_list = soup.find_all('div', {"class":"product-item"})
+    is_div = True
+    if len(product_list) == 0:
+        product_list = soup.find_all('a', {"class":"product-item"})
+        is_div = False
+
+    for index, product in enumerate(product_list):
+        print(" "*50)
+        print("="*50)
+        print(f"Page {page} - Product {index}")
+        print("="*50)
+
+        article = {}
+        
         #Seller ID
-        d['Seller ID'] = product["data-id"]
-        print("Seller ID:", d['Seller ID'])
-
+        article["seller"] = product["data-id"] if is_div else "N/A"
+        print("Seller ID:", article["seller"])
+        
         #Product ID
-        d['Product ID'] = product["product-sku"]
-        print("Product ID:", d['Product ID'])
+        article["id"] = products_json[index]["sku"]
+        print("Product ID:", article["id"])
 
         #Product price
-        d['Product Price'] = product["data-price"]
-        print("Product price:", d['Product Price'])
+        article["price"] = products_json[index]["offers"]["price"]
+        print("Product price:", article["price"] )
 
         #Product title
-        d['Product Titlte'] = product["data-title"]
-        print("Product title:", d['Product Titlte'])
+        article["name"] = products_json[index]["name"]
+        print("Product title:", article["name"] )
 
         #Product image
-        d['Product Image'] = product.find('img', {"class": "product-image"})["src"]
-        print("Product image:", d['Product Image'])
+        article["image"] = products_json[index]["image"]
+        print("Product image:", article["image"])
 
         #Product link
-        d['Product Link'] = "https://tiki.vn/"+re.findall(r'^.*\.html', product.find('a')["href"])[0]
-        print("Product link:", d['Product Link'])
+        article["link"] = "https://tiki.vn"+re.findall(r'^.*\.html', products_json[index]["url"])[0]
+        print("Product link:", article["link"])
 
         #Tikinow available
         service_badge = product.find('div', {'class': 'badge-service'})
-        d['TikiNow'] = bool(service_badge) and service_badge.img["src"] == TIKINOW_IMG
-        print("TikiNow:", d['TikiNow'])
-
+        img = False
+        if service_badge:
+            img = service_badge.find('img')
+        article["tiki_now"] = img["src"]==TIKINOW_IMG if img else False
+        print("TikiNow:", article["tiki_now"])
+        
         #Freeship available
-        badge_top= product.find('div', {'class': 'badge-top'})
-        d['Freeship'] = bool(badge_top) and badge_top.img["src"] == FREESHIP_IMG
-        print("Freeship available:", d['Freeship'])
+        badge_top = product.find('div', {'class': 'badge-top'})
+        img = False
+        if badge_top:
+            img = badge_top.find('img')
+        article["freeship"] = img["src"]==FREESHIP_IMG if img else False
+        print("Freeship available:", article["freeship"])
 
         #Shocking price
         badge_top = product.find('div', {'class': 'badge-top'})
-        d['Shocking Price'] = bool(badge_top) and badge_top.img["src"] == SHOCKING_IMG
-        print("Shocking price:", d['Shocking Price'])
+        img = False
+        if badge_top:
+            img = badge_top.find('img')
+        article["shocking_price"] = img["src"]==SHOCKING_IMG if img else False
+        print("Shocking price:", article["shocking_price"])
 
         #Reviews
-        has_reviews = bool(product.find('div', {'class': 'review-wrap'}))
-        d['Reviews'] = re.findall(r'\d+', product.find('p', {'class': 'review'}).text)[0] if has_reviews else 0
-        print("Number of reviews:", d['Reviews'])
+        article["reviews"] = products_json[index]["aggregateRating"]["reviewCount"] if "aggregateRating" in products_json[index] else 0
+        print("# of reviews:", article["reviews"])
 
-        #Star Rating
-        try:
-            average = product.find('span', {'class': 'rating-content'}).span["style"] if has_reviews else 0
-            d['Star Rating'] = 0.05*int(re.findall(r'\d+', average)[0])
-            print("Star rating:",d['Star Rating'])
-        except:
-            print("Star rating: None")
+        #Rating average
+        article["score"] = products_json[index]["aggregateRating"]["ratingValue"] if "aggregateRating" in products_json[index] else 0
+        print("Average score:", article["score"])
 
         #Underpricing
-        d['Underpricing'] = bool(product.find('div', {'class': 'badge-under_price'}))
-        print("Underpricing:", d['Underpricing'])
+        article["is_under_price"] = bool(product.find('div', {'class': 'badge-under_price'}))
+        print("Under price:", article["is_under_price"])
 
         #Discount
-        try:
-            d['discount'] = product.find('span', {'class': 'sale-tag'}).text
-            print("Discount:", d['discount'])
-        except:
-            print("Discount: None")
+        discount = "0%"
+        if is_div:
+            discount = product.find('span', {'class': 'sale-tag'})
+        else:
+            discount = product.find('div', {'class': 'price-discount__discount'})
+        article["discount"] = discount.text if discount else "0%"
+        print("Discount:", article["discount"])
 
         #Paid by installments
-        d['Installments Allowed'] = bool(product.find('div',{'class':'installment-wrapper'}))
-        print("Paid by installments:", d['Installments Allowed'])
+        is_paid_by_installments = False
+        if is_div:
+            is_paid_by_installments = bool( product.find('div', {'class': 'installment-wrapper'}) )
+        else:
+            is_paid_by_installments = bool( product.find('div', {'class': 'badge-benefits'}) )
+        article["installments"] = is_paid_by_installments
+        print("Paid by installments:", article["installments"])
 
         #Freegifts
-        d['Freegift'] = bool(product.find('div',{'class':'freegift-list'}))
-        print("Freegift:", d['Freegift'])
+        article["free_gift"] = bool(product.find('div',{'class':'freegift-list'}))
+        print("Freegift:",article["free_gift"])
         
         #Additional info
-        d['Additional Info'] = product.find('div', {'class': 'ship-label-wrapper'}).text.strip()
-        print('Additional info:', d['Additional Info'])
-        data.append(d)
+        info = ""
+        if is_div:
+            info = product.find('div', {'class': 'ship-label-wrapper'}).text.strip()
+        else:
+            info = product.find('div', {'class': 'badge-additional-info'}).text.strip()
+        article["extra_info"] = info
+        print('Additional info:', article["extra_info"])
 
-articles = pd.DataFrame(data)
+        products.append(article)
+
+    page += 1
+
+print("Pages:", page)
+print("Products:", len(products))
+
+import pandas as pd
+articles = pd.DataFrame(products)
 print(articles)
-articles.to_csv("./Result.csv", index=False)
+articles.to_csv("./result.csv", index=False, sep =';')
