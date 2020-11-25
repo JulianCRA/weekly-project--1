@@ -10,14 +10,12 @@ FREESHIP_IMG = "https://salt.tikicdn.com/ts/upload/f3/74/46/f4c52053d220e94a0474
 TIKINOW_IMG = "https://salt.tikicdn.com/ts/upload/9f/32/dd/8a8d39d4453399569dfb3e80fe01de75.png"
 SHOCKING_IMG = "https://salt.tikicdn.com/ts/upload/75/34/d2/4a9a0958a782da8930cdad8f08afff37.png"
 HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:83.0) Gecko/20100101 Firefox/83.0',	
-    'Cookie':
-	'TIKI_GUEST_TOKEN=L9OuC5fcFzKMjRrsHVdiIG4P2vheNx6A; amp_99d374=NrVrH1DqDC8Czvy5p6f2e0...1enuvttuc.1env1dma0.0.5.5; tiki_client_id=undefined; amp_99d374_tiki.vn=NrVrH1DqDC8Czvy5p6f2e0...1enuvttuc.1env1dma2.0.1.1; TOKENS={%22access_token%22:%22L9OuC5fcFzKMjRrsHVdiIG4P2vheNx6A%22%2C%22expires_in%22:157680000%2C%22expires_at%22:1763964314069%2C%22guest_token%22:%22L9OuC5fcFzKMjRrsHVdiIG4P2vheNx6A%22}'
+    'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:83.0) Gecko/20100101 Firefox/83.0'
 }
 CATEGORY_LINK = "https://tiki.vn/o-to-xe-may-xe-dap/c8594?src=c.8594.hamburger_menu_fly_out_banner"
 MAX_TRIES = 10
 
-page = 23
+page = 1
 fails = 0
 products = []
 
